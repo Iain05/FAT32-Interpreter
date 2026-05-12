@@ -1,7 +1,7 @@
 #include "fat32_init.h"
 #include <stdio.h>
 
-BPB initialize(FILE *disk) {
+int initialize(FILE *disk, BPB *retval) {
   BPB bpb;
   fread(&bpb, sizeof(bpb), 1, disk);
 
@@ -26,5 +26,25 @@ BPB initialize(FILE *disk) {
 
   printf("Media: 0x%02X\n", bpb.Media);
 
-  return bpb;
+  printf("FATSz16: %d\n", bpb.FATSz16);
+
+  printf("SecPerTrk: %d\n", bpb.SecPerTrk);
+
+  printf("NumHeads: %d\n", bpb.NumHeads);
+
+  printf("HiddSec: %d\n", bpb.HiddSec);
+
+  printf("TotSec32: %d\n", bpb.TotSec32);
+
+  fseek(disk, 36, SEEK_SET);
+  printf("\n-----Data fields for FAT32 (offset 36)-----\n");
+
+  printf("FATSz32: %d\n", bpb.FATSz32);
+
+  printf("ExtFlags: %b\n", bpb.FATSz32);
+
+  printf("RootClus: %d\n", bpb.RootClus);
+
+  *retval = bpb;
+  return 0;
 }

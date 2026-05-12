@@ -12,6 +12,8 @@ int main(int argc, char *argv[]) {
   }
 
   initBPB(disk);
+  printf("list:\n");
+  list();
 
   fclose(disk);
   return 0;

@@ -3,6 +3,6 @@
 
 #include "fat32_utils.h"
 
-BPB initialize(FILE *disk);
+int initialize(FILE *d, BPB *retval);
 
 #endif // !FAT32_INIT_H
