@@ -1,11 +1,12 @@
-#include <stdio.h>
 #include <limits.h>
+#include <stdio.h>
 
 void print_bits(unsigned long n, int num_bits) {
   for (int i = num_bits - 1; i >= 0; i--) {
     int bit = (n >> i) & 1;
     printf("%d", bit);
-    if (i % 8 == 0 && i != 0) printf(" ");
+    if (i % 8 == 0 && i != 0)
+      printf(" ");
   }
   printf("\n");
 }
