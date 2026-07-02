@@ -49,4 +49,6 @@ int initBPB(FILE *disk);
 
 int list();
 
+int cd_single(char *dir);
+
 #endif // !FAT32_UTILS_H

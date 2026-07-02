@@ -14,6 +14,10 @@ uint16_t data_start_sector;
 uint16_t bytes_per_cluster;
 uint32_t current;
 
+// at some point I could probably implement like a linkedlist of directories
+// every time the user cds so we dont have to search every time. But that
+// sounds like later me's problem to implement. And frankly it doesn't matter
+
 uint32_t cluster_to_offset(uint32_t N) {
   return (data_start_sector + (N - 2) * bpb.SecPerClus) * bpb.BytesPerSec;
 }
@@ -21,6 +25,15 @@ uint32_t cluster_to_offset(uint32_t N) {
 uint32_t next_cluster(uint32_t N) {
   uint32_t next = (fat_start_sector * bpb.BytesPerSec) + (N * 4);
   return next & 0x0FFFFFFF;
+}
+
+uint32_t clusterOfDirectory(FAT entry) {
+  if ((entry.Attr & 0x10) == 0)
+    return 0;
+  uint32_t cluster = (entry.FstClusHI << 16) | entry.FstClusLO;
+  if (cluster == 0)
+    return bpb.RootClus;
+  return cluster;
 }
 
 int initBPB(FILE *d) {
@@ -63,6 +76,7 @@ int parseFATEntry(FAT entry, char *name) {
 }
 
 int list() {
+  printf("\nList (cluster %d):\n", current);
   FAT entry;
   int entries_per_cluster = bytes_per_cluster >> 5;
 
@@ -79,7 +93,6 @@ int list() {
 
       if (retval == 0) {
         printf("%.11s\n", name);
-        print_bits_str(name);
       }
     }
     current = next_cluster(current);
@@ -87,9 +100,35 @@ int list() {
   return 0;
 }
 
-// i think we need to print the raw bytes to see whats actually going on in the
-// entry.Name
 int cd_single(char *dir) {
-  (void)dir;
+  printf("\nCD %s:\n", dir);
+  FAT entry;
+  int entries_per_cluster = bytes_per_cluster >> 5;
+
+  while (!EOC(current)) {
+    fseek(disk, cluster_to_offset(current), SEEK_SET);
+
+    for (int i = 0; i < entries_per_cluster; i++) {
+      fread(&entry, sizeof(FAT), 1, disk);
+      char name[12];
+      int retval = parseFATEntry(entry, name);
+
+      if (retval == 1) {
+        printf("Directory %s does not exist\n", dir);
+        return 0;
+      }
+
+      if (retval != 0) {
+        continue;
+      }
+
+      if (strcmp(dir, name) == 0) {
+        current = clusterOfDirectory(entry);
+        return 0;
+      }
+    }
+    current = next_cluster(current);
+  }
+  printf("Directory %s does not exist\n", dir);
   return 0;
 }

@@ -12,7 +12,11 @@ int main(int argc, char *argv[]) {
   }
 
   initBPB(disk);
-  printf("list:\n");
+  list();
+  cd_single("MY_FOLDER");
+  cd_single("MYFOLDER");
+  list();
+  cd_single("..");
   list();
 
   fclose(disk);
