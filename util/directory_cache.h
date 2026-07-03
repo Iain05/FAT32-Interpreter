@@ -3,4 +3,8 @@
 
 #include <stdint.h>
 
+// typedef struct {
+//
+// } DirectoryCache;
+
 #endif // !DIRECTORY_CACHE_H

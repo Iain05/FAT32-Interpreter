@@ -1,0 +1,3 @@
+-Iutil
+-Wall
+-Wextra

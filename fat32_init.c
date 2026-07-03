@@ -1,8 +1,8 @@
 #include "fat32_init.h"
 #include <stdio.h>
 
-int initialize(FILE *disk, BPB *retval) {
-  BPB bpb;
+int initialize(FILE *disk, bpb_t *retval) {
+  bpb_t bpb;
   fread(&bpb, sizeof(bpb), 1, disk);
 
   printf("jmpBoot: [0x%02X, 0x%02X, 0x%02X]\n", bpb.jmpBoot[0], bpb.jmpBoot[1],

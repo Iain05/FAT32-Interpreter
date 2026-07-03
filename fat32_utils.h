@@ -28,7 +28,7 @@ typedef struct {
   uint16_t BkBootSec;
   uint8_t Reserved[12];
   // rest is boot sector which i dont wanna touch
-} __attribute__((packed)) BPB;
+} __attribute__((packed)) bpb_t;
 
 typedef struct {
   uint8_t Name[11];
@@ -43,9 +43,9 @@ typedef struct {
   uint16_t WrtDate;
   uint16_t FstClusLO;
   uint32_t FileSize;
-} __attribute__((packed)) FAT;
+} __attribute__((packed)) fat_t;
 
-int init_BPB(FILE *disk);
+int init_bpb(FILE *disk);
 
 int list();
 

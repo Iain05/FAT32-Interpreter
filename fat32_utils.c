@@ -8,7 +8,7 @@
 #define EOC(a) (((a) > EOC_MIN && (a) < EOC_MAX) ? 1 : 0)
 
 FILE *disk;
-BPB bpb;
+bpb_t bpb;
 uint16_t fat_start_sector;
 uint16_t data_start_sector;
 uint16_t bytes_per_cluster;
@@ -27,7 +27,7 @@ uint32_t next_cluster(uint32_t N) {
   return next & 0x0FFFFFFF;
 }
 
-uint32_t clusterOfDirectory(FAT entry) {
+uint32_t cluster_of_directory(fat_t entry) {
   if ((entry.Attr & 0x10) == 0)
     return 0;
   uint32_t cluster = (entry.FstClusHI << 16) | entry.FstClusLO;
@@ -36,7 +36,7 @@ uint32_t clusterOfDirectory(FAT entry) {
   return cluster;
 }
 
-int init_BPB(FILE *d) {
+int init_bpb(FILE *d) {
   disk = d;
   int res = initialize(disk, &bpb);
   if (res != 0) {
@@ -54,7 +54,7 @@ int init_BPB(FILE *d) {
   return 0;
 }
 
-int parse_FAT_entry(FAT entry, char *name) {
+int parse_fat_entry(fat_t entry, char *name) {
   uint8_t first = (uint8_t)entry.Name[0];
 
   if (first == 0x00)
@@ -77,16 +77,16 @@ int parse_FAT_entry(FAT entry, char *name) {
 
 int list() {
   printf("\nList (cluster %d):\n", current);
-  FAT entry;
+  fat_t entry;
   int entries_per_cluster = bytes_per_cluster >> 5;
 
   while (!EOC(current)) {
     fseek(disk, cluster_to_offset(current), SEEK_SET);
 
     for (int i = 0; i < entries_per_cluster; i++) {
-      fread(&entry, sizeof(FAT), 1, disk);
+      fread(&entry, sizeof(fat_t), 1, disk);
       char name[12];
-      int retval = parse_FAT_entry(entry, name);
+      int retval = parse_fat_entry(entry, name);
 
       if (retval == 1)
         return 0;
@@ -102,16 +102,16 @@ int list() {
 
 int cd_single(char *dir) {
   printf("\nCD %s:\n", dir);
-  FAT entry;
+  fat_t entry;
   int entries_per_cluster = bytes_per_cluster >> 5;
 
   while (!EOC(current)) {
     fseek(disk, cluster_to_offset(current), SEEK_SET);
 
     for (int i = 0; i < entries_per_cluster; i++) {
-      fread(&entry, sizeof(FAT), 1, disk);
+      fread(&entry, sizeof(fat_t), 1, disk);
       char name[12];
-      int retval = parse_FAT_entry(entry, name);
+      int retval = parse_fat_entry(entry, name);
 
       if (retval == 1) {
         printf("Directory %s does not exist\n", dir);
@@ -123,7 +123,7 @@ int cd_single(char *dir) {
       }
 
       if (strcmp(dir, name) == 0) {
-        current = clusterOfDirectory(entry);
+        current = cluster_of_directory(entry);
         return 0;
       }
     }
