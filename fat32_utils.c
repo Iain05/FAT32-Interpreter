@@ -36,7 +36,7 @@ uint32_t clusterOfDirectory(FAT entry) {
   return cluster;
 }
 
-int initBPB(FILE *d) {
+int init_BPB(FILE *d) {
   disk = d;
   int res = initialize(disk, &bpb);
   if (res != 0) {
@@ -54,7 +54,7 @@ int initBPB(FILE *d) {
   return 0;
 }
 
-int parseFATEntry(FAT entry, char *name) {
+int parse_FAT_entry(FAT entry, char *name) {
   uint8_t first = (uint8_t)entry.Name[0];
 
   if (first == 0x00)
@@ -86,7 +86,7 @@ int list() {
     for (int i = 0; i < entries_per_cluster; i++) {
       fread(&entry, sizeof(FAT), 1, disk);
       char name[12];
-      int retval = parseFATEntry(entry, name);
+      int retval = parse_FAT_entry(entry, name);
 
       if (retval == 1)
         return 0;
@@ -111,7 +111,7 @@ int cd_single(char *dir) {
     for (int i = 0; i < entries_per_cluster; i++) {
       fread(&entry, sizeof(FAT), 1, disk);
       char name[12];
-      int retval = parseFATEntry(entry, name);
+      int retval = parse_FAT_entry(entry, name);
 
       if (retval == 1) {
         printf("Directory %s does not exist\n", dir);

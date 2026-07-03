@@ -1,20 +1,17 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -Iutil
 
-fat32: main.o fat32_utils.o fat32_init.o debug.o
-	$(CC) $(CFLAGS) main.o fat32_utils.o fat32_init.o debug.o -o fat32
+SRCS = main.c fat32_utils.c fat32_init.c util/debug.c util/directory_cache.c
+OBJS = $(SRCS:.c=.o)
+TARGET = fat32
 
-main.o: main.c fat32_utils.h
-	$(CC) $(CFLAGS) -c main.c
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET)
 
-fat32_utils.o: fat32_utils.c fat32_utils.h fat32_init.h debug.h
-	$(CC) $(CFLAGS) -c fat32_utils.c
-
-fat32_init.o: fat32_init.c fat32_init.h fat32_utils.h
-	$(CC) $(CFLAGS) -c fat32_init.c
-
-debug.o: debug.c debug.h
-	$(CC) $(CFLAGS) -c debug.c
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o fat32
+	rm -f $(OBJS) $(TARGET)
+
+.PHONY: clean

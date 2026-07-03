@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  initBPB(disk);
+  init_BPB(disk);
   list();
   cd_single("MY_FOLDER");
   cd_single("MYFOLDER");

@@ -45,7 +45,7 @@ typedef struct {
   uint32_t FileSize;
 } __attribute__((packed)) FAT;
 
-int initBPB(FILE *disk);
+int init_BPB(FILE *disk);
 
 int list();
 
