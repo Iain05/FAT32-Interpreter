@@ -61,7 +61,7 @@ int parse_fat_entry(fat_t entry, char *name) {
     return 1; // end of directory
   if (first == 0xE5)
     return 2; // deleted, skip
-  if (entry.Attr == 0x0F)
+  if ((entry.Attr & 0x3F) == 0x0F)
     return 3; // LFN
 
   int end = 11;
