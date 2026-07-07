@@ -1,6 +1,8 @@
 #include <limits.h>
 #include <stdio.h>
 
+#include "../fat32_utils.h"
+
 void print_bits(unsigned long n, int num_bits) {
   for (int i = num_bits - 1; i >= 0; i--) {
     int bit = (n >> i) & 1;
@@ -18,3 +20,5 @@ void print_bits_str(char *s) {
     s++;
   }
 }
+
+void print_fat_entry_data(fat_t entry) { (void)entry; }

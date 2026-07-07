@@ -13,11 +13,11 @@ int main(int argc, char *argv[]) {
 
   init_bpb(disk);
   list();
-  cd_single("MY_FOLDER");
-  cd_single("MYFOLDER");
-  list();
-  cd_single("..");
-  list();
+  /* cd_single("MY_FOLDER"); */
+  /* cd_single("MYFOLDER"); */
+  /* list(); */
+  /* cd_single(".."); */
+  /* list(); */
 
   fclose(disk);
   return 0;

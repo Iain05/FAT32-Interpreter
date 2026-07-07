@@ -1,7 +1,9 @@
 #include "fat32_utils.h"
 #include "debug.h"
 #include "fat32_init.h"
+#include <assert.h>
 #include <string.h>
+#include <uchar.h>
 
 #define EOC_MAX 0x0FFFFFFF
 #define EOC_MIN 0x0FFFFFF8
@@ -13,6 +15,9 @@ uint16_t fat_start_sector;
 uint16_t data_start_sector;
 uint16_t bytes_per_cluster;
 uint32_t current;
+
+char16_t lfn_buffer[255];
+uint8_t lfn_buffer_head = 255;
 
 // at some point I could probably implement like a linkedlist of directories
 // every time the user cds so we dont have to search every time. But that
@@ -54,15 +59,35 @@ int init_bpb(FILE *d) {
   return 0;
 }
 
+int parse_lfn_entry(lfn_t entry) {
+  // yeah this is kinda dumb ill make it nicer later its probably temporary
+  if (entry.Ord & 0x40)
+    assert(lfn_buffer_head == 255);
+  memcpy(&lfn_buffer[lfn_buffer_head -= 5], entry.Name, sizeof(entry.Name));
+  memcpy(&lfn_buffer[lfn_buffer_head -= 6], entry.Name2, sizeof(entry.Name2));
+  memcpy(&lfn_buffer[lfn_buffer_head -= 2], entry.Name3, sizeof(entry.Name3));
+  if ((entry.Ord & 0x07) == 0x01)
+    return 0;
+  return 1;
+}
+
 int parse_fat_entry(fat_t entry, char *name) {
   uint8_t first = (uint8_t)entry.Name[0];
+  int retval;
 
   if (first == 0x00)
     return 1; // end of directory
   if (first == 0xE5)
     return 2; // deleted, skip
-  if ((entry.Attr & 0x3F) == 0x0F)
-    return 3; // LFN
+
+  printf("%x | ", entry.Attr);
+
+  if ((entry.Attr & 0x3F) == 0x0F) {
+    retval = parse_lfn_entry(*((lfn_t *)&entry));
+    if (retval == 0)
+      return 3; // Last LFN
+    return 4;   // LFN
+  }
 
   int end = 11;
   while (end > 0 && entry.Name[end - 1] == ' ') {
@@ -93,6 +118,10 @@ int list() {
 
       if (retval == 0) {
         printf("%.11s\n", name);
+      }
+
+      if (retval == 3) {
+        // print the lfn_buffer, clear it, and move the header back
       }
     }
     current = next_cluster(current);

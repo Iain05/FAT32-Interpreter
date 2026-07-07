@@ -45,6 +45,16 @@ typedef struct {
   uint32_t FileSize;
 } __attribute__((packed)) fat_t;
 
+typedef struct {
+  uint8_t Ord;
+  uint16_t Name[5];
+  uint8_t Attr;
+  uint8_t Type;
+  uint8_t Chksum;
+  uint16_t Name2[6];
+  uint16_t Name3[2];
+} __attribute__((packed)) lfn_t;
+
 int init_bpb(FILE *disk);
 
 int list();
