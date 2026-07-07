@@ -30,7 +30,10 @@ uint32_t cluster_to_offset(uint32_t N) {
 }
 
 uint32_t next_cluster(uint32_t N) {
-  uint32_t next = (fat_start_sector * bpb.BytesPerSec) + (N * 4);
+  uint32_t fat_offset = (fat_start_sector * bpb.BytesPerSec) + (N * 4);
+  uint32_t next;
+  fseek(disk, fat_offset, SEEK_SET);
+  fread(&next, sizeof(next), 1, disk);
   return next & 0x0FFFFFFF;
 }
 
@@ -74,7 +77,7 @@ int parse_lfn_entry(lfn_t entry) {
   return 1;
 }
 
-int parse_fat_entry(fat_t entry, char *name) {
+int parse_fat_entry(fat_t entry) {
   uint8_t first = (uint8_t)entry.Name[0];
   int retval;
 
@@ -90,78 +93,97 @@ int parse_fat_entry(fat_t entry, char *name) {
     return 4;   // LFN
   }
 
-  int end = 11;
-  while (end > 0 && entry.Name[end - 1] == ' ') {
-    end--;
-  }
-
-  memcpy(name, entry.Name, end);
-  name[end] = '\0';
+  /* int end = 11; */
+  /* while (end > 0 && entry.Name[end - 1] == ' ') { */
+  /*   end--; */
+  /* } */
+  /**/
+  /* memcpy(name, entry.Name, end); */
+  /* name[end] = '\0'; */
 
   return 0;
+}
+
+// return the number of fat entries read or 0 for the last entry
+int parse_file() {
+  fat_t entry;
+  int retval;
+  int num_entries = 0;
+
+  do {
+    fread(&entry, sizeof(fat_t), 1, disk);
+    retval = parse_fat_entry(entry);
+
+    if (retval == 1) // end of directory
+      return 0;
+
+    if (retval == 3) {
+      print_utf16(lfn_buffer + lfn_buffer_head,
+                  LFN_BUFFER_SIZE - lfn_buffer_head);
+      lfn_buffer_head = LFN_BUFFER_SIZE;
+      printf("\n");
+    }
+    num_entries++;
+  } while (retval == 4);
+
+  return num_entries;
 }
 
 int list() {
   printf("\nList (cluster %d):\n", current);
-  fat_t entry;
+
+  int retval;
   int entries_per_cluster = bytes_per_cluster >> 5;
 
   while (!EOC(current)) {
     fseek(disk, cluster_to_offset(current), SEEK_SET);
 
-    for (int i = 0; i < entries_per_cluster; i++) {
-      fread(&entry, sizeof(fat_t), 1, disk);
-      char name[12];
-      int retval = parse_fat_entry(entry, name);
-
-      if (retval == 1)
+    int parsed_entries = 0;
+    do {
+      retval = parse_file();
+      if (retval == 0) {
         return 0;
-
-      /* if (retval == 0) { */
-      /*   printf("%.11s\n", name); */
-      /* } */
-
-      if (retval == 3) {
-        printf("\n");
-        print_utf16(lfn_buffer + lfn_buffer_head,
-                    LFN_BUFFER_SIZE - lfn_buffer_head);
-        lfn_buffer_head = LFN_BUFFER_SIZE;
       }
-    }
+      parsed_entries += retval;
+    } while (parsed_entries < entries_per_cluster);
+
+    if (parsed_entries > entries_per_cluster)
+      printf("Something has gone very VERY wrong\n");
+
     current = next_cluster(current);
   }
   return 0;
 }
 
-int cd_single(char *dir) {
-  printf("\nCD %s:\n", dir);
-  fat_t entry;
-  int entries_per_cluster = bytes_per_cluster >> 5;
-
-  while (!EOC(current)) {
-    fseek(disk, cluster_to_offset(current), SEEK_SET);
-
-    for (int i = 0; i < entries_per_cluster; i++) {
-      fread(&entry, sizeof(fat_t), 1, disk);
-      char name[12];
-      int retval = parse_fat_entry(entry, name);
-
-      if (retval == 1) {
-        printf("Directory %s does not exist\n", dir);
-        return 0;
-      }
-
-      if (retval != 0) {
-        continue;
-      }
-
-      if (strcmp(dir, name) == 0) {
-        current = cluster_of_directory(entry);
-        return 0;
-      }
-    }
-    current = next_cluster(current);
-  }
-  printf("Directory %s does not exist\n", dir);
-  return 0;
-}
+/* int cd_single(char *dir) { */
+/*   printf("\nCD %s:\n", dir); */
+/*   fat_t entry; */
+/*   int entries_per_cluster = bytes_per_cluster >> 5; */
+/**/
+/*   while (!EOC(current)) { */
+/*     fseek(disk, cluster_to_offset(current), SEEK_SET); */
+/**/
+/*     for (int i = 0; i < entries_per_cluster; i++) { */
+/*       fread(&entry, sizeof(fat_t), 1, disk); */
+/*       char name[12]; */
+/*       int retval = parse_fat_entry(entry, name); */
+/**/
+/*       if (retval == 1) { */
+/*         printf("Directory %s does not exist\n", dir); */
+/*         return 0; */
+/*       } */
+/**/
+/*       if (retval != 0) { */
+/*         continue; */
+/*       } */
+/**/
+/*       if (strcmp(dir, name) == 0) { */
+/*         current = cluster_of_directory(entry); */
+/*         return 0; */
+/*       } */
+/*     } */
+/*     current = next_cluster(current); */
+/*   } */
+/*   printf("Directory %s does not exist\n", dir); */
+/*   return 0; */
+/* } */
