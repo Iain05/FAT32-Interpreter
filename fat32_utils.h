@@ -52,6 +52,7 @@ typedef struct {
   uint8_t Type;
   uint8_t Chksum;
   uint16_t Name2[6];
+  uint16_t FstClusLO;
   uint16_t Name3[2];
 } __attribute__((packed)) lfn_t;
 

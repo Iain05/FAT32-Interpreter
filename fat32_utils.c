@@ -1,10 +1,12 @@
 #include "fat32_utils.h"
 #include "debug.h"
 #include "fat32_init.h"
+#include "utf16.h"
 #include <assert.h>
 #include <string.h>
 #include <uchar.h>
 
+#define LFN_BUFFER_SIZE 255
 #define EOC_MAX 0x0FFFFFFF
 #define EOC_MIN 0x0FFFFFF8
 #define EOC(a) (((a) > EOC_MIN && (a) < EOC_MAX) ? 1 : 0)
@@ -16,8 +18,8 @@ uint16_t data_start_sector;
 uint16_t bytes_per_cluster;
 uint32_t current;
 
-char16_t lfn_buffer[255];
-uint8_t lfn_buffer_head = 255;
+char16_t lfn_buffer[LFN_BUFFER_SIZE];
+uint8_t lfn_buffer_head = LFN_BUFFER_SIZE;
 
 // at some point I could probably implement like a linkedlist of directories
 // every time the user cds so we dont have to search every time. But that
@@ -62,11 +64,12 @@ int init_bpb(FILE *d) {
 int parse_lfn_entry(lfn_t entry) {
   // yeah this is kinda dumb ill make it nicer later its probably temporary
   if (entry.Ord & 0x40)
-    assert(lfn_buffer_head == 255);
-  memcpy(&lfn_buffer[lfn_buffer_head -= 5], entry.Name, sizeof(entry.Name));
-  memcpy(&lfn_buffer[lfn_buffer_head -= 6], entry.Name2, sizeof(entry.Name2));
-  memcpy(&lfn_buffer[lfn_buffer_head -= 2], entry.Name3, sizeof(entry.Name3));
-  if ((entry.Ord & 0x07) == 0x01)
+    assert(lfn_buffer_head == LFN_BUFFER_SIZE);
+  lfn_buffer_head -= 13;
+  memcpy(&lfn_buffer[lfn_buffer_head], entry.Name, sizeof(entry.Name));
+  memcpy(&lfn_buffer[lfn_buffer_head + 5], entry.Name2, sizeof(entry.Name2));
+  memcpy(&lfn_buffer[lfn_buffer_head + 11], entry.Name3, sizeof(entry.Name3));
+  if ((entry.Ord & 0x1F) == 0x01)
     return 0;
   return 1;
 }
@@ -79,8 +82,6 @@ int parse_fat_entry(fat_t entry, char *name) {
     return 1; // end of directory
   if (first == 0xE5)
     return 2; // deleted, skip
-
-  printf("%x | ", entry.Attr);
 
   if ((entry.Attr & 0x3F) == 0x0F) {
     retval = parse_lfn_entry(*((lfn_t *)&entry));
@@ -116,12 +117,15 @@ int list() {
       if (retval == 1)
         return 0;
 
-      if (retval == 0) {
-        printf("%.11s\n", name);
-      }
+      /* if (retval == 0) { */
+      /*   printf("%.11s\n", name); */
+      /* } */
 
       if (retval == 3) {
-        // print the lfn_buffer, clear it, and move the header back
+        printf("\n");
+        print_utf16(lfn_buffer + lfn_buffer_head,
+                    LFN_BUFFER_SIZE - lfn_buffer_head);
+        lfn_buffer_head = LFN_BUFFER_SIZE;
       }
     }
     current = next_cluster(current);

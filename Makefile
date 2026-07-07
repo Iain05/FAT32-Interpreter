@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g -Iutil
 
-SRCS = main.c fat32_utils.c fat32_init.c util/debug.c util/directory_cache.c
+SRCS = main.c fat32_utils.c fat32_init.c util/debug.c util/directory_cache.c util/utf16.c
 OBJS = $(SRCS:.c=.o)
 TARGET = fat32
 
