@@ -65,19 +65,20 @@ int init_bpb(FILE *d) {
 }
 
 int parse_lfn_entry(lfn_t entry) {
-  // yeah this is kinda dumb ill make it nicer later its probably temporary
   if (entry.Ord & 0x40)
     assert(lfn_buffer_head == LFN_BUFFER_SIZE);
+
   lfn_buffer_head -= 13;
   memcpy(&lfn_buffer[lfn_buffer_head], entry.Name, sizeof(entry.Name));
   memcpy(&lfn_buffer[lfn_buffer_head + 5], entry.Name2, sizeof(entry.Name2));
   memcpy(&lfn_buffer[lfn_buffer_head + 11], entry.Name3, sizeof(entry.Name3));
+
   if ((entry.Ord & 0x1F) == 0x01)
     return 0;
   return 1;
 }
 
-int parse_fat_entry(fat_t entry) {
+int parse_fat_entry(fat_t entry, char *sfn) {
   uint8_t first = (uint8_t)entry.Name[0];
   int retval;
 
@@ -93,13 +94,7 @@ int parse_fat_entry(fat_t entry) {
     return 4;   // LFN
   }
 
-  /* int end = 11; */
-  /* while (end > 0 && entry.Name[end - 1] == ' ') { */
-  /*   end--; */
-  /* } */
-  /**/
-  /* memcpy(name, entry.Name, end); */
-  /* name[end] = '\0'; */
+  memcpy(sfn, entry.Name, 11);
 
   return 0;
 }
@@ -108,24 +103,30 @@ int parse_fat_entry(fat_t entry) {
 int parse_file() {
   fat_t entry;
   int retval;
+  char sfn[12];
   int num_entries = 0;
 
   do {
     fread(&entry, sizeof(fat_t), 1, disk);
-    retval = parse_fat_entry(entry);
+    retval = parse_fat_entry(entry, sfn);
 
     if (retval == 1) // end of directory
       return 0;
 
-    if (retval == 3) {
+    if (retval == 3) { // end of LFN, next read is the file
+      fread(&entry, sizeof(fat_t), 1, disk);
+      parse_fat_entry(entry, sfn);
+      printf("%.11s | 0x%X | ", sfn, entry.Attr);
+
       print_utf16(lfn_buffer + lfn_buffer_head,
                   LFN_BUFFER_SIZE - lfn_buffer_head);
-      lfn_buffer_head = LFN_BUFFER_SIZE;
+
       printf("\n");
     }
     num_entries++;
   } while (retval == 4);
 
+  lfn_buffer_head = LFN_BUFFER_SIZE;
   return num_entries;
 }
 
